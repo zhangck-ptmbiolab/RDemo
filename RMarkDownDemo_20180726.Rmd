@@ -1,0 +1,179 @@
+---
+title: "RMarkdownDemo_20180726"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+
+
+
+Testing as a demo
+
+Clear the workspace
+
+```{r}
+rm(list = ls())
+```
+
+Load the library
+
+
+```{r}
+library(reshape2)
+library(ggplot2)
+library(dplyr)
+```
+
+
+Load the iris dataset
+
+```{r}
+data("iris")
+```
+
+Check the colname names, dimensions, and what's the top lines
+
+```{r}
+colnames(iris)
+dim(iris)
+head(iris)
+```
+
+Add an ID column to make our life easier
+
+```{r}
+iris.df <- iris %>%
+  mutate(SampleID = rownames(iris))
+head(iris.df)
+```
+
+Melt the iris.df to have a test of reshape2
+
+```{r}
+iris.df.melt <- melt(iris.df, id.vars = c("SampleID", "Species"), 
+                     variable.name = "Features", value.name = "Calc")
+
+dim(iris.df.melt)
+
+head(iris.df.melt)
+
+
+```
+
+How about if we are only interested in Sepal.Length? 
+
+```{r}
+iris.sepal.l <- iris.df.melt %>%
+  filter(Features %in% c("Sepal.Length"))
+
+unique(iris.df.melt$Features)
+
+unique(iris.sepal.l$Features)
+
+```
+
+Then let's get back to a fat and wide format
+
+```{r}
+iris.df.dcast <- dcast(iris.df.melt, SampleID + Species ~ Features, 
+                       value.var = "Calc")
+head(iris.df.dcast)
+```
+
+Well, that's a wrong sort for sample IDs, correct it
+
+```{r}
+iris.df.dcast$SampleID <- as.numeric(iris.df.dcast$SampleID)
+iris.df.dcast <- iris.df.dcast[order(iris.df.dcast$SampleID),]
+head(iris.df.dcast)
+```
+
+How about if we want to calculate the average Sepal.L/W and Petal.L/W per species? 
+
+You can do something like
+
+```{r}
+iris.sepal.l <- iris.df.melt %>%
+  filter(Features %in% c("Sepal.Length"))
+
+unique(iris.sepal.l$Species)
+
+temp.df <- iris.sepal.l[iris.sepal.l$Species == 'setosa',]
+
+mean(temp.df$Calc)
+
+```
+
+And then repeat each step
+
+However, you can do something more efficient here for sepal.length
+
+```{r}
+iris.sepal.l %>%
+  select(-SampleID, -Features) %>%
+  group_by(Species) %>%
+  summarize(n = n(), mean = mean(Calc))
+
+
+```
+
+
+You can also do something for all the datasets
+
+```{r}
+iris.df.melt %>%
+  group_by(Features, Species) %>%
+  summarize(n = n(), mean = mean(Calc))
+
+```
+
+
+Plot using ggplot2 
+
+```{r}
+ggplot(iris.df.melt, aes(Features, Calc, color = Features)) + 
+  geom_jitter(height = 0, width = 0.12) + 
+  ggtitle("Pu Tao Tu") + 
+  facet_wrap(.~Species)
+
+```
+
+```{r}
+ggplot(iris.df.melt, aes(Features, Calc, color = Features)) + 
+  geom_jitter(height = 0, width = 0.12) + 
+  ggtitle("Pu Tao Tu") +
+  geom_boxplot(alpha = 0.3, outlier.shape = NA)
+
+```
+
+
+
+
+
+
+
+
+
